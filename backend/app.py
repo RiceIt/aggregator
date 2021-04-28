@@ -1,15 +1,15 @@
-from flask import Flask, render_template
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 from backend.config import Configuration
 
 
 app = Flask(__name__)
-
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-
 app.config.from_object(Configuration)
-app.run()
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+
+from backend import views
+from backend import models
