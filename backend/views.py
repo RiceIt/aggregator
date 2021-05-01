@@ -2,13 +2,15 @@ from flask import render_template
 
 from backend.app import app
 from backend.funcs import get_tasks, add_user, get_users
+from backend.forms import CategoryForm
 
 
 @app.route('/')
 def task_list_view():
     context = {
         "tasks": get_tasks(),
-        "users": get_users()
+        "users": get_users(),
+        "form": CategoryForm(),
     }
     return render_template('index.html', **context)
 
