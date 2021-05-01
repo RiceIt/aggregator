@@ -12,4 +12,3 @@ migrate = Migrate(app, db)
 
 
 from backend import views
-from backend import models

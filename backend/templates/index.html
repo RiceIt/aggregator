@@ -47,46 +47,56 @@
 
 
 <div class="container">
-    <div class="row">
-        <h1>Welcome</h1>
-    </div>
-    <div class="row">
-        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapse" role="button" aria-expanded="false" aria-controls="collapse">
-            Выбрать фильтры
-        </a>
-    </div>
-    <div class="collapse" id="collapse">
-            <form action="" method="post" novalidate>
-                {{ form.hidden_tag() }}
+<!--    <div class="row">-->
+<!--        <h1>Welcome</h1>-->
+<!--    </div>-->
+<!--    <div class="row">-->
+<!--        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapse" role="button" aria-expanded="false" aria-controls="collapse">-->
+<!--            Выбрать фильтры-->
+<!--        </a>-->
+<!--    </div>-->
+<!--    <div class="collapse" id="collapse">-->
+<!--            <form action="" method="post" novalidate>-->
+<!--                {{ form.hidden_tag() }}-->
 
-                {% for field in form if field.name != "csrf_token" and field.name != "submit" %}
-                <span>{{ field.label }} {{ field }}</span>
-                {% endfor %}
+<!--                {% for field in form if field.name != "csrf_token" and field.name != "submit" %}-->
+<!--                <span>{{ field.label }} {{ field }}</span>-->
+<!--                {% endfor %}-->
 
-                <p>{{ form.submit }}</p>
-            </form>
-    </div>
-    <br>
-   {% for task in tasks %}
+<!--                <p>{{ form.submit }}</p>-->
+<!--            </form>-->
+<!--    </div>-->
+<!--    <br>-->
+<!--   {% for task in tasks %}-->
+<!--    <div class="row mb-4">-->
+<!--        <div class="col-md-1">{{ task._id }}</div>-->
+<!--        <div class="col-md-2">{{ task.title }}</div>-->
+<!--        <div class="col-md-1">-->
+<!--        {% for category in task.categories %}-->
+<!--            {{ category }}-->
+<!--            {% endfor %}-->
+<!--        </div>-->
+<!--        <div class="col-md-4">{{ task.text }}</div>-->
+<!--        <div class="col-md-2">{{ task.link }}</div>-->
+<!--        <div class="col-md-1">{{ task.price }}</div>-->
+<!--        <div class="col-md-1">{{ task.created_at }}</div>-->
+<!--    </div>-->
+<!--    <hr>-->
+<!--   {% endfor %}-->
     <div class="row mb-4">
-        <div class="col-md-1">{{ task._id }}</div>
-        <div class="col-md-2">{{ task.title }}</div>
-        <div class="col-md-1">
-        {% for category in task.categories %}
-            {{ category }}
-            {% endfor %}
-        </div>
-        <div class="col-md-4">{{ task.text }}</div>
-        <div class="col-md-2">{{ task.link }}</div>
-        <div class="col-md-1">{{ task.price }}</div>
-        <div class="col-md-1">{{ task.created_at }}</div>
-    </div>
-    <hr>
-   {% endfor %}
-    <div class="row mb-4">
-        {{ users }}
+        {% for user in users %}
+            <p>
+                {{ user.id }}
+                {{ user.chat_id }}
+                {{ user.psw }}
+                {{ user.filters }}
+                {{ user.date }}
+            </p>
+        {% endfor %}
     </div>
 </div>
+
+
 <script async src="https://telegram.org/js/telegram-widget.js?14" data-telegram-login="aggregator_notification_bot" data-size="large" data-userpic="false" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
 <script type="text/javascript">
   function onTelegramAuth(user) {

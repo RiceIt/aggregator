@@ -73,4 +73,3 @@ for project in project_list:
             add_categories_if_not_exist(categories)
         print()
         time.sleep(1)
-
