@@ -1,12 +1,14 @@
 import re
+import sys
 import time
-
 import requests
 import datetime
 
 from bs4 import BeautifulSoup
 
-from funcs import insert_one_if_not_exist, update_one, add_categories_if_not_exist
+sys.path.insert(0, '/home/rais/PycharmProjects/aggregator/')
+
+from funcs import insert_one_if_not_exist, update_one, add_filters_if_not_exist, push_notifications
 
 
 def get_soup_from_script(script):
@@ -65,11 +67,13 @@ for project in project_list:
         created_ago_int = to_int(created_ago)
         created_at_full = datetime.datetime.now() - datetime.timedelta(minutes=created_ago_int)
         created_at = created_at_full.strftime("%Y:%m:%d %H:%M")
-        exist = insert_one_if_not_exist({'_id': _id, 'title': title, 'link': link, 'price': price, 'text': text, 'created_at': created_at})
+        task = {'_id': _id, 'title': title, 'link': link, 'price': price, 'text': text, 'created_at': created_at}
+        exist = insert_one_if_not_exist(task)
         print(title, exist)
         if not exist:
             categories = parse_task(_id, link)
             update_one(_id, categories)
-            add_categories_if_not_exist(categories)
+            # add_categories_if_not_exist(categories)
+            add_filters_if_not_exist(categories)
+            push_notifications(task, categories)
         print()
-        time.sleep(1)

@@ -3,7 +3,10 @@ import os
 
 class Configuration:
     DEBUG = True
-    SECRET_KEY = '17f5022fc66a716659716c25547fe9911bfc054ac61fb53e2ad0badf3d6c'
+    SECRET_KEY = os.environ["SECRET_KEY"]
     MONGODB_URI = 'mongodb://localhost:27017/'
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://rais:1111@localhost/aggregator'
+    POSTGRESQL_USER = os.environ["POSTGRESQL_USER"]
+    POSTGRESQL_PASSWORD = os.environ["POSTGRESQL_PASSWORD"]
+    POSTGRESQL_DBNAME = 'aggregator'
+    SQLALCHEMY_DATABASE_URI = f'postgresql+psycopg2://{POSTGRESQL_USER}:{POSTGRESQL_PASSWORD}@localhost/aggregator'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
