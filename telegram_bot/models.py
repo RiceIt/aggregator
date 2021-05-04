@@ -19,7 +19,9 @@ class Users(db.Model):
     psw = db.Column(db.String(255), unique=True)
     filters = db.relationship('Filters', secondary=user_filters, lazy='subquery', backref=db.backref('users', lazy=True))
     is_active = db.Column(db.Boolean)
+    silent_mode = db.Column(db.Boolean)
     adding_filters = db.Column(db.Boolean)
+    current_platform = db.Column(db.String(255))
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -30,3 +32,4 @@ class Filters(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
     slug = db.Column(db.String(255), unique=True)
+    platform = db.Column(db.String(255))

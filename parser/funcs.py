@@ -1,10 +1,9 @@
 import pymongo
 import psycopg2
-import datetime
 import slugify
 
 from pymongo.errors import DuplicateKeyError
-from wtforms import BooleanField, SubmitField
+from wtforms import BooleanField
 from backend.config import Configuration
 from telegram_bot.funcs import send_message
 
@@ -42,17 +41,7 @@ def add_filter(conn, cur, name, slug):
     print("Успешно!")
 
 
-# def add_categories_if_not_exist(categories):
-#     for category in categories:
-#         category_name = slugify.slugify(category)
-#         print(category_name)
-#         try:
-#             categories_collection.insert_one({'_id': category_name, 'category': category})
-#         except DuplicateKeyError:
-#             pass
-
-
-def add_filters_if_not_exist(filters):
+def add_filters_if_not_exist(filters, platform):
     conn = psycopg2.connect(f"dbname={Configuration.POSTGRESQL_DBNAME} "
                             f"user={Configuration.POSTGRESQL_USER} "
                             f"password={Configuration.POSTGRESQL_PASSWORD}")
@@ -61,7 +50,7 @@ def add_filters_if_not_exist(filters):
     for filter_name in filters:
         filter_slug = slugify.slugify(filter_name)
         try:
-            add_filter(conn, cur, filter_name, filter_slug)
+            add_filter(conn, cur, filter_name, filter_slug, platform)
         except psycopg2.errors.UniqueViolation:
             cur.execute("ROLLBACK")
             conn.commit()
@@ -78,15 +67,15 @@ def push_notifications(task, categories):
                             f"password={Configuration.POSTGRESQL_PASSWORD}")
 
     categories_placeholders = ', '.join(['%s'] * len(categories))
-    sql = f"SELECT users.chat_id FROM filters INNER JOIN user_filters ON (filters.name IN ({categories_placeholders}) AND user_filters.filter_id = filters.id) INNER JOIN users ON (users.id = user_filters.user_id AND users.is_active = True) GROUP BY users.chat_id"
+    sql = f"SELECT users.chat_id, users.silent_mode FROM filters INNER JOIN user_filters ON (filters.name IN ({categories_placeholders}) AND user_filters.filter_id = filters.id) INNER JOIN users ON (users.id = user_filters.user_id AND users.is_active = True) GROUP BY users.chat_id, users.silent_mode"
 
     cur = conn.cursor()
     cur.execute(sql, categories)
     users = cur.fetchall()
-    chat_ids = [u[0] for u in users]
-    print(chat_ids)
-    for chat_id in chat_ids:
-        send_message(chat_id, text=message)
+    for user in users:
+        print(user)
+        chat_id, silent_mode = user
+        send_message(chat_id, text=message, disable_notification=silent_mode)
 
 
 def get_category_form_attributes():
@@ -95,3 +84,12 @@ def get_category_form_attributes():
     for category in categories:
         result[category['_id']] = BooleanField(category["category"])
     return result
+
+
+def insert_one_if_not_exist_freelance(task):
+    try:
+        # tasks_collection.insert_one(task)
+        # print(f"Успешно добавлено: {task['_id']}, {task['created_at']}")
+        return False
+    except DuplicateKeyError:
+        return True

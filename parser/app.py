@@ -1,6 +1,5 @@
 import re
 import sys
-import time
 import requests
 import datetime
 
@@ -26,10 +25,6 @@ def to_int(created):
 
 def parse_task(_id, url):
     task_html = requests.get(url).text
-    # task_pattern = re.compile(r'в сфере(.+)с бюджетом')
-    # match = re.search(task_pattern, task_html)
-    # categories = [s.strip() for s in match[1].split('/')]
-    # print(categories)
     task_soup = BeautifulSoup(task_html, 'lxml')
     task_text = task_soup.find('div', id=f'projectp{_id}')
     categories_tag = task_text.next_sibling.next_sibling.next_sibling.next_sibling
@@ -73,7 +68,6 @@ for project in project_list:
         if not exist:
             categories = parse_task(_id, link)
             update_one(_id, categories)
-            # add_categories_if_not_exist(categories)
-            add_filters_if_not_exist(categories)
+            add_filters_if_not_exist(categories, "fl.ru")
             push_notifications(task, categories)
         print()

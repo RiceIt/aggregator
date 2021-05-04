@@ -1,6 +1,8 @@
 from flask import Flask, request
+
 from .models import db, migrate
-from .funcs import start, send_message, activate, deactivate, add_filters, remove_filters, add_filter, adding_filter, remove_filter, add_user
+from .funcs import (start, activate, deactivate, add_filters, remove_filters, add_filter, adding_filter,
+                    remove_filter, silent_mode_on, silent_mode_off, add_platforms, remove_platforms, to_platforms)
 from backend.config import Configuration
 
 
@@ -17,29 +19,35 @@ def receive_update():
         print(request.json)
         try:
             chat_id = request.json["message"]["chat"]["id"]
-            if request.json["message"]["text"] == "/start" or request.json["message"]["text"] == "Назад":
+            if request.json["message"]["text"] == "/start" or request.json["message"]["text"] == "Вернуться":
                 start(chat_id)
-            elif request.json["message"]["text"] == "Активировать уведомления":
-                response = activate(chat_id)
-                send_message(chat_id, text=response)
-            elif request.json["message"]["text"] == "Деактивировать":
-                response = deactivate(chat_id)
-                send_message(chat_id, text=response)
+            elif request.json["message"]["text"] == "Включить уведомления":
+                activate(chat_id)
+            elif request.json["message"]["text"] == "Отключить уведомления":
+                deactivate(chat_id)
+            elif request.json["message"]["text"] == "Включить беззвучный режим":
+                silent_mode_on(chat_id)
+            elif request.json["message"]["text"] == "Отключить беззвучный режим":
+                silent_mode_off(chat_id)
             elif request.json["message"]["text"] == "Добавить категории":
-                add_filters(chat_id)
+                add_platforms(chat_id)
             elif request.json["message"]["text"] == "Удалить категории":
-                remove_filters(chat_id)
+                remove_platforms(chat_id)
+            elif request.json["message"]["text"] == "<< К платформам":
+                to_platforms(chat_id)
+            elif request.json["message"]["text"] == "fl.ru":
+                if adding_filter(chat_id):
+                    add_filters(chat_id)
+                else:
+                    remove_filters(chat_id)
             else:
                 category = request.json["message"]["text"]
                 if adding_filter(chat_id):
                     add_filter(chat_id, category)
-                    # send_message(chat_id, response)
                 else:
                     remove_filter(chat_id, category)
-                    # send_message(chat_id, response)
         except KeyError:
             chat_id = request.json['my_chat_member']['chat']['id']
             print(chat_id)
-            # add_user(chat_id, 'dasdasdas')
 
     return {"ok": True}

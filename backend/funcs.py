@@ -1,6 +1,5 @@
 import pymongo
 
-
 from backend.app import app
 
 
