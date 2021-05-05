@@ -60,8 +60,6 @@ def add_filters_if_not_exist(filters, platform):
 
 
 def push_notifications(task, categories):
-    print(task)
-    print(categories)
     message = f"📌 <b>{task['title']}</b>\n\n📝 {task['text']}\n\n💰 {task['price']}\n\n" \
               f"📚 {' '.join(categories)}\n\n🔗 {task['link']}"
     conn = psycopg2.connect(f"dbname={Configuration.POSTGRESQL_DBNAME} "
@@ -75,7 +73,6 @@ def push_notifications(task, categories):
     cur.execute(sql, categories)
     users = cur.fetchall()
     for user in users:
-        print(user)
         chat_id, silent_mode = user
         send_message(chat_id, text=message, parse_mode='html', disable_notification=silent_mode)
 

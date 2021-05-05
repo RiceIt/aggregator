@@ -214,5 +214,4 @@ def get_keyboard_button(buttons):
         else:
             row.append(button)
     result.append(row)
-    print(result)
     return result

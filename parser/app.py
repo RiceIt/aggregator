@@ -64,10 +64,8 @@ def parse_fl():
             created_at = created_at_full.strftime("%Y:%m:%d %H:%M")
             task = {'_id': _id, 'title': title, 'link': link, 'price': price, 'text': text, 'created_at': created_at}
             exist = insert_one_if_not_exist(task)
-            print(title, exist)
             if not exist:
                 categories = parse_task(_id, link)
                 update_one(_id, categories)
                 add_filters_if_not_exist(categories, "fl.ru")
                 push_notifications(task, categories)
-            print()
