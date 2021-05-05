@@ -3,10 +3,7 @@ import os
 import requests
 
 from datetime import datetime
-from werkzeug.security import generate_password_hash
-from sqlalchemy import distinct
 from sqlalchemy.orm.exc import FlushError
-from sqlalchemy.exc import IntegrityError
 
 from telegram_bot.models import db, Users, Filters
 
@@ -18,23 +15,30 @@ def start(chat_id):
     u = Users.query.filter_by(chat_id=chat_id).first()
 
     try:
-        filters = u.filters
+        filters = [f.name for f in u.filters]
     except AttributeError:
         u = Users(chat_id=chat_id, is_active=True, date=datetime.now())
         db.session.add(u)
         db.session.commit()
         u = Users.query.filter_by(chat_id=chat_id).first()
-        filters = u.filters
-    if u.is_active:
-        if u.silent_mode:
+        filters = [f.name for f in u.filters]
+    send_start_notification(chat_id, text, filters, u.is_active, u.silent_mode)
+
+
+def send_start_notification(chat_id, text, filters, is_active, silent_mode):
+    if filters:
+        text = "Категории на которые вы подписаны: " + ", ".join([f"<b><i>{f}</i></b>" for f in filters])
+
+    if is_active:
+        if silent_mode:
+            text = "🌑 Беззвучный режим\n\n" + text
             keyboard_buttons = [["Удалить категории", "Добавить категории"], ["Отключить беззвучный режим", "Отключить уведомления"]]
         else:
+            text = "🟢 Уведомления включены\n\n" + text
             keyboard_buttons = [["Удалить категории", "Добавить категории"], ["Включить беззвучный режим", "Отключить уведомления"]]
     else:
+        text = "🔴 Уведомления отключены\n\n" + text
         keyboard_buttons = [["Удалить категории", "Добавить категории"], ["Включить уведомления"]]
-
-    if filters:
-        text = "Категории на которые вы подписаны: " + ", ".join([f"<b><i>{f.name}</i></b>" for f in filters])
 
     reply_markup = json.dumps({"keyboard": keyboard_buttons, "resize_keyboard": True})
     send_message(chat_id, text=text, parse_mode='html', reply_markup=reply_markup)

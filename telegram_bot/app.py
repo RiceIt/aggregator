@@ -1,8 +1,9 @@
 from flask import Flask, request
 
-from models import db, migrate
-from funcs import (start, activate, deactivate, add_filters, remove_filters, add_filter, adding_filter,
-                    remove_filter, silent_mode_on, silent_mode_off, add_platforms, remove_platforms, to_platforms)
+from telegram_bot.models import db, migrate
+from telegram_bot.funcs import (start, activate, deactivate, add_filters, remove_filters, add_filter, adding_filter,
+                                remove_filter, silent_mode_on, silent_mode_off, add_platforms, remove_platforms,
+                                to_platforms)
 from backend.config import Configuration
 
 

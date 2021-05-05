@@ -2,7 +2,6 @@ import os
 
 
 class Configuration:
-    DEBUG = True
     SECRET_KEY = os.environ["SECRET_KEY"]
     MONGODB_URI = 'mongodb://localhost:27017/'
     POSTGRESQL_USER = os.environ["POSTGRESQL_USER"]

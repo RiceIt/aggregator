@@ -4,6 +4,7 @@ import slugify
 
 from pymongo.errors import DuplicateKeyError
 from wtforms import BooleanField
+
 from backend.config import Configuration
 from telegram_bot.funcs import send_message
 
@@ -61,7 +62,8 @@ def add_filters_if_not_exist(filters, platform):
 def push_notifications(task, categories):
     print(task)
     print(categories)
-    message = f"{task['title']}\n\n{task['text']}\n\n{task['price']}\n\n{' '.join(categories)}\n\n{task['link']}"
+    message = f"📌 <b>{task['title']}</b>\n\n📝 {task['text']}\n\n💰 {task['price']}\n\n" \
+              f"📚 {' '.join(categories)}\n\n🔗 {task['link']}"
     conn = psycopg2.connect(f"dbname={Configuration.POSTGRESQL_DBNAME} "
                             f"user={Configuration.POSTGRESQL_USER} "
                             f"password={Configuration.POSTGRESQL_PASSWORD}")
@@ -75,7 +77,7 @@ def push_notifications(task, categories):
     for user in users:
         print(user)
         chat_id, silent_mode = user
-        send_message(chat_id, text=message, disable_notification=silent_mode)
+        send_message(chat_id, text=message, parse_mode='html', disable_notification=silent_mode)
 
 
 def get_category_form_attributes():
