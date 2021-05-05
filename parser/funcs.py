@@ -35,8 +35,8 @@ def update_one(_id, categories):
     tasks_collection.update_one({'_id': _id}, {'$set': {'categories': categories}})
 
 
-def add_filter(conn, cur, name, slug):
-    cur.execute(f"INSERT INTO filters (name, slug) VALUES (%s, %s)", (name, slug))
+def add_filter(conn, cur, name, slug, platform):
+    cur.execute(f"INSERT INTO filters (name, slug, platform) VALUES (%s, %s, %s)", (name, slug, platform))
     conn.commit()
     print("Успешно!")
 

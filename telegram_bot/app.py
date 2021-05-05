@@ -1,7 +1,7 @@
 from flask import Flask, request
 
-from .models import db, migrate
-from .funcs import (start, activate, deactivate, add_filters, remove_filters, add_filter, adding_filter,
+from models import db, migrate
+from funcs import (start, activate, deactivate, add_filters, remove_filters, add_filter, adding_filter,
                     remove_filter, silent_mode_on, silent_mode_off, add_platforms, remove_platforms, to_platforms)
 from backend.config import Configuration
 
@@ -47,7 +47,7 @@ def receive_update():
                 else:
                     remove_filter(chat_id, category)
         except KeyError:
-            chat_id = request.json['my_chat_member']['chat']['id']
-            print(chat_id)
+            print(request.json)
+            pass
 
     return {"ok": True}
