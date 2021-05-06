@@ -34,7 +34,6 @@ def send_start_notification(chat_id, text, filters, is_active, silent_mode):
             text = "🌑 Беззвучный режим\n\n" + text
             keyboard_buttons = [["Удалить категории", "Добавить категории"], ["Отключить беззвучный режим", "Отключить уведомления"]]
         else:
-            text = "🟢 Уведомления включены\n\n" + text
             keyboard_buttons = [["Удалить категории", "Добавить категории"], ["Включить беззвучный режим", "Отключить уведомления"]]
     else:
         text = "🔴 Уведомления отключены\n\n" + text
@@ -55,7 +54,6 @@ def send_message(chat_id, **kwargs):
         u.is_active = False
         u.silent_mode = False
         db.session.commit()
-    print(response.status_code)
 
 
 def activate(chat_id):
@@ -108,7 +106,7 @@ def add_platforms(chat_id):
     db.session.commit()
 
     platforms = Filters.query.with_entities(Filters.platform).distinct().all()
-    platforms = [p[0] for p in platforms]
+    platforms = sorted([p[0] for p in platforms])
     platforms.insert(0, "Вернуться")
     keyboard_buttons = get_keyboard_button(platforms)
     reply_markup = json.dumps({"keyboard": keyboard_buttons, "resize_keyboard": True})
@@ -123,7 +121,7 @@ def remove_platforms(chat_id):
 
     filters = u.filters
     if filters:
-        platforms = list({f.platform for f in filters})
+        platforms = sorted(list({f.platform for f in filters}))
         platforms.insert(0, "Вернуться")
         keyboard_buttons = get_keyboard_button(platforms)
         reply_markup = json.dumps({"keyboard": keyboard_buttons, "resize_keyboard": True})
@@ -133,13 +131,13 @@ def remove_platforms(chat_id):
         start(chat_id)
 
 
-def add_filters(chat_id, text="Выберите категорию, которую хотите добавить"):
+def add_filters(chat_id, platform, text="Выберите категорию, которую хотите добавить"):
     u = Users.query.filter_by(chat_id=chat_id).first()
     u.adding_filters = True
-    u.current_platform = "fl.ru"
+    u.current_platform = platform
     db.session.commit()
 
-    res = Filters.query.all()
+    res = Filters.query.filter_by(platform=platform)
     filters = [f.name for f in res]
     filters.insert(0, "<< К платформам")
     keyboard_buttons = get_keyboard_button(filters)
@@ -150,24 +148,25 @@ def add_filters(chat_id, text="Выберите категорию, котору
 def add_filter(chat_id, category):
     u = Users.query.filter_by(chat_id=chat_id).first()
     f = Filters.query.filter_by(name=category).first()
+    platform = u.current_platform
     try:
         u.filters.append(f)
         db.session.add(u)
         db.session.commit()
-        add_filters(chat_id, text=f"Вы подписались на категорию \"{category}\"")
+        add_filters(chat_id, platform, text=f"Вы подписались на категорию \"{category}\"")
     except FlushError:
         send_message(chat_id, text="Такой категории не существует")
 
 
-def remove_filters(chat_id, text="Выберите категории, которые хотите удалить"):
+def remove_filters(chat_id, platform, text="Выберите категории, которые хотите удалить"):
     u = Users.query.filter_by(chat_id=chat_id).first()
     u.adding_filters = False
-    u.current_platform = "fl.ru"
+    u.current_platform = platform
     db.session.commit()
 
     filters = u.filters
     if filters:
-        filters = [f.name for f in filters]
+        filters = [f.name for f in filters if f.platform == u.current_platform]
         filters.insert(0, "<< К платформам")
         keyboard_buttons = get_keyboard_button(filters)
         reply_markup = json.dumps({"keyboard": keyboard_buttons, "resize_keyboard": True})
@@ -179,10 +178,11 @@ def remove_filters(chat_id, text="Выберите категории, кото�
 def remove_filter(chat_id, category):
     u = Users.query.filter_by(chat_id=chat_id).first()
     f = Filters.query.filter_by(name=category).first()
+    platform = u.current_platform
     try:
         u.filters.remove(f)
         db.session.commit()
-        remove_filters(chat_id, f"Вы отписались от категории \"{category}\"")
+        remove_filters(chat_id, platform, f"Вы отписались от категории \"{category}\"")
     except ValueError:
         send_message(chat_id, text="Вы не подписаны на эту категорию")
 

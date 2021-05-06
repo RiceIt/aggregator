@@ -36,11 +36,12 @@ def receive_update():
                 remove_platforms(chat_id)
             elif request.json["message"]["text"] == "<< К платформам":
                 to_platforms(chat_id)
-            elif request.json["message"]["text"] == "fl.ru":
+            elif request.json["message"]["text"] in ("fl.ru", "freelance.ru", "freelance.habr.com"):
+                platform = request.json["message"]["text"]
                 if adding_filter(chat_id):
-                    add_filters(chat_id)
+                    add_filters(chat_id, platform)
                 else:
-                    remove_filters(chat_id)
+                    remove_filters(chat_id, platform)
             else:
                 category = request.json["message"]["text"]
                 if adding_filter(chat_id):

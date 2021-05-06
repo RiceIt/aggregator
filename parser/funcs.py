@@ -1,6 +1,7 @@
 import pymongo
 import psycopg2
 import slugify
+import logging
 
 from pymongo.errors import DuplicateKeyError
 from wtforms import BooleanField
@@ -8,8 +9,10 @@ from wtforms import BooleanField
 from backend.config import Configuration
 from telegram_bot.funcs import send_message
 
-MONGODB_URI = 'mongodb://localhost:27017/'
+logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(name)s %(levelname)s:%(message)s')
+logger = logging.getLogger(__name__)
 
+MONGODB_URI = 'mongodb://localhost:27017/'
 mongo = pymongo.MongoClient(MONGODB_URI)
 db = mongo["tasks"]
 tasks_collection = db['tasks']
@@ -23,23 +26,28 @@ def get_tasks():
         print(task)
 
 
-def insert_one_if_not_exist(task):
+def insert_one_if_not_exist(task, platform):
     try:
-        tasks_collection.insert_one(task)
-        print(f"Успешно добавлено: {task['_id']}, {task['created_at']}")
+        collection = db[platform]
+        task_id = collection.insert_one(task)
+
+        logger.info(f"В коллекцию {platform} добавлена задача: {task['_id']} - {task['title']}")
         return False
     except DuplicateKeyError:
         return True
 
 
-def update_one(_id, categories):
-    tasks_collection.update_one({'_id': _id}, {'$set': {'categories': categories}})
+def update_categories(_id, categories, platform):
+    db[platform].update_one({'_id': _id}, {'$set': {'categories': categories}})
+
+
+def update_text(_id, text, platform):
+    db[platform].update_one({'_id': _id}, {'$set': {'text': text}})
 
 
 def add_filter(conn, cur, name, slug, platform):
     cur.execute(f"INSERT INTO filters (name, slug, platform) VALUES (%s, %s, %s)", (name, slug, platform))
     conn.commit()
-    print("Успешно!")
 
 
 def add_filters_if_not_exist(filters, platform):
@@ -52,6 +60,7 @@ def add_filters_if_not_exist(filters, platform):
         filter_slug = slugify.slugify(filter_name)
         try:
             add_filter(conn, cur, filter_name, filter_slug, platform)
+            logger.info(f'Добавлена новая категория {filter_name}')
         except psycopg2.errors.UniqueViolation:
             cur.execute("ROLLBACK")
             conn.commit()
@@ -67,10 +76,10 @@ def push_notifications(task, categories):
                             f"password={Configuration.POSTGRESQL_PASSWORD}")
 
     categories_placeholders = ', '.join(['%s'] * len(categories))
-    sql = f"SELECT users.chat_id, users.silent_mode FROM filters INNER JOIN user_filters ON (filters.name IN ({categories_placeholders}) AND user_filters.filter_id = filters.id) INNER JOIN users ON (users.id = user_filters.user_id AND users.is_active = True) GROUP BY users.chat_id, users.silent_mode"
+    sql = f"SELECT users.chat_id, users.silent_mode FROM filters INNER JOIN user_filters ON (filters.name IN ({categories_placeholders}) AND filters.platform = (%s) AND user_filters.filter_id = filters.id) INNER JOIN users ON (users.id = user_filters.user_id AND users.is_active = True) GROUP BY users.chat_id, users.silent_mode"
 
     cur = conn.cursor()
-    cur.execute(sql, categories)
+    cur.execute(sql, (*categories, task['platform']))
     users = cur.fetchall()
     for user in users:
         chat_id, silent_mode = user
@@ -83,12 +92,3 @@ def get_category_form_attributes():
     for category in categories:
         result[category['_id']] = BooleanField(category["category"])
     return result
-
-
-def insert_one_if_not_exist_freelance(task):
-    try:
-        # tasks_collection.insert_one(task)
-        # print(f"Успешно добавлено: {task['_id']}, {task['created_at']}")
-        return False
-    except DuplicateKeyError:
-        return True

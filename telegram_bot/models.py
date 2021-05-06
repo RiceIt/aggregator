@@ -29,7 +29,8 @@ class Users(db.Model):
 
 
 class Filters(db.Model):
+    __table_args__ = (db.UniqueConstraint('slug', 'platform'),)
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
-    slug = db.Column(db.String(255), unique=True)
+    slug = db.Column(db.String(255))
     platform = db.Column(db.String(255))

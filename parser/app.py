@@ -3,7 +3,7 @@ import requests
 import datetime
 
 from bs4 import BeautifulSoup
-from parser.funcs import insert_one_if_not_exist, update_one, add_filters_if_not_exist, push_notifications
+from parser.funcs import insert_one_if_not_exist, update_categories, add_filters_if_not_exist, push_notifications
 
 
 PATTERN = re.compile(r"'.+'")
@@ -62,10 +62,11 @@ def parse_fl():
             created_ago_int = to_int(created_ago)
             created_at_full = datetime.datetime.now() - datetime.timedelta(minutes=created_ago_int)
             created_at = created_at_full.strftime("%Y:%m:%d %H:%M")
-            task = {'_id': _id, 'title': title, 'link': link, 'price': price, 'text': text, 'created_at': created_at}
-            exist = insert_one_if_not_exist(task)
+            task = {'_id': "1" + _id, 'title': title, 'link': link, 'price': price, 'text': text,
+                    'created_at': created_at, 'platform': 'fl.ru'}
+            exist = insert_one_if_not_exist(task, 'fl')
             if not exist:
                 categories = parse_task(_id, link)
-                update_one(_id, categories)
+                update_categories("1" + _id, categories, 'fl')
                 add_filters_if_not_exist(categories, "fl.ru")
                 push_notifications(task, categories)
