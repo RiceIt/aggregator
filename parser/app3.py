@@ -11,6 +11,8 @@ def get_date(created_ago):
         return datetime.datetime.now() - datetime.timedelta(minutes=digits)
     elif "час" in created_ago:
         return datetime.datetime.now() - datetime.timedelta(hours=digits)
+    elif "день" in created_ago or "дня" in created_ago or "дней" in created_ago:
+        return datetime.datetime.now() - datetime.timedelta(days=digits)
 
 
 def get_digits(string):
