@@ -43,8 +43,7 @@ def parse_habr():
         _id = href.split('/')[-1]
         created_ago = project.find('span', class_='params__published-at').find('span').string.strip()
         created_at = get_date(created_ago).strftime("%Y:%m:%d %H:%M")
-        tags_item = project.find('ul', class_='tags tags_short').find_all('li', class_='tags__item')
-        categories = [c.a.string for c in tags_item]
+        categories = ["freelance.habr.com", ]
         price = project.find('aside', class_='task__column_price').find('div', class_='task__price-icon').next_sibling.next_element.strip()
         task = {'_id': "3" + _id, 'title': title, 'link': link, 'price': price, 'created_at': created_at,
                 'platform': 'freelance.habr.com', 'categories': categories}

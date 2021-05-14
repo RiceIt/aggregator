@@ -9,6 +9,7 @@ from wtforms import BooleanField
 from backend.config import Configuration
 from telegram_bot.funcs import send_message
 
+
 logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(name)s %(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
 
@@ -17,13 +18,6 @@ mongo = pymongo.MongoClient(MONGODB_URI)
 db = mongo["tasks"]
 tasks_collection = db['tasks']
 categories_collection = db['categories']
-
-
-def get_tasks():
-    tasks = tasks_collection.find({})
-
-    for task in tasks:
-        print(task)
 
 
 def insert_one_if_not_exist(task, platform):

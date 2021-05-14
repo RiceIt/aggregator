@@ -3,10 +3,11 @@ import logging
 from flask import Flask, request
 
 from telegram_bot.models import db, migrate
+from backend.config import Configuration
 from telegram_bot.funcs import (start, activate, deactivate, add_filters, remove_filters, add_filter, adding_filter,
                                 remove_filter, silent_mode_on, silent_mode_off, add_platforms, remove_platforms,
-                                to_platforms)
-from backend.config import Configuration
+                                to_platforms, add_habr, remove_habr)
+
 
 logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(name)s %(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -40,19 +41,24 @@ def receive_update():
                 remove_platforms(chat_id)
             elif request.json["message"]["text"] == "<< К платформам":
                 to_platforms(chat_id)
-            elif request.json["message"]["text"] in ("fl.ru", "freelance.ru", "freelance.habr.com"):
+            elif request.json["message"]["text"] in ("fl.ru", "freelance.ru"):
                 platform = request.json["message"]["text"]
                 if adding_filter(chat_id):
                     add_filters(chat_id, platform)
                 else:
                     remove_filters(chat_id, platform)
+            elif request.json["message"]["text"] == "freelance.habr.com":
+                if adding_filter(chat_id):
+                    add_habr(chat_id)
+                else:
+                    remove_habr(chat_id)
             else:
                 category = request.json["message"]["text"]
                 if adding_filter(chat_id):
                     add_filter(chat_id, category)
                 else:
                     remove_filter(chat_id, category)
-        except KeyError:
+        except KeyError as e:
             logger.exception("KeyError occurred")
 
         except AttributeError as e:

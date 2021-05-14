@@ -149,6 +149,7 @@ def add_filter(chat_id, category):
     u = Users.query.filter_by(chat_id=chat_id).first()
     f = Filters.query.filter_by(name=category).first()
     platform = u.current_platform
+
     try:
         u.filters.append(f)
         db.session.add(u)
@@ -179,6 +180,7 @@ def remove_filter(chat_id, category):
     u = Users.query.filter_by(chat_id=chat_id).first()
     f = Filters.query.filter_by(name=category).first()
     platform = u.current_platform
+
     try:
         u.filters.remove(f)
         db.session.commit()
@@ -186,6 +188,30 @@ def remove_filter(chat_id, category):
     except ValueError:
         send_message(chat_id, text="Вы не подписаны на эту категорию")
 
+
+def add_habr(chat_id):
+    u = Users.query.filter_by(chat_id=chat_id).first()
+    f = Filters.query.filter_by(name='freelance.habr.com').first()
+    platform = 'freelance.habr.com'
+
+    u.filters.append(f)
+    db.session.add(u)
+    db.session.commit()
+    send_message(chat_id, text=f'Вы подписались на платформу "freelance.habr.com"')
+    add_platforms(chat_id)
+
+
+def remove_habr(chat_id):
+    u = Users.query.filter_by(chat_id=chat_id).first()
+    f = Filters.query.filter_by(name='freelance.habr.com').first()
+
+    try:
+        u.filters.remove(f)
+        db.session.commit()
+        send_message(chat_id, text=f'Вы отписались от платформы "freelance.habr.com"')
+        remove_platforms(chat_id)
+    except ValueError:
+        send_message(chat_id, text="Вы не подписаны на эту категорию")
 
 def to_platforms(chat_id):
     u = Users.query.filter_by(chat_id=chat_id).first()
