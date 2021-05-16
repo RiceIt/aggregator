@@ -1,16 +1,12 @@
-import logging
-
 from flask import Flask, request
 
+from telegram_bot.logger import logger
 from telegram_bot.models import db, migrate
-from backend.config import Configuration
+from telegram_bot.config import Configuration
 from telegram_bot.funcs import (start, activate, deactivate, add_filters, remove_filters, add_filter, adding_filter,
                                 remove_filter, silent_mode_on, silent_mode_off, add_platforms, remove_platforms,
                                 to_platforms, add_habr, remove_habr)
 
-
-logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(name)s %(levelname)s:%(message)s')
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config.from_object(Configuration)

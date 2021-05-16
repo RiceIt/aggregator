@@ -6,7 +6,6 @@ from flask_migrate import Migrate
 db = SQLAlchemy()
 migrate = Migrate()
 
-
 user_filters = db.Table('user_filters',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
     db.Column('filter_id', db.Integer, db.ForeignKey('filters.id'), primary_key=True),
