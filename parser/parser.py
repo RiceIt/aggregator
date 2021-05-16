@@ -275,4 +275,3 @@ def main():
                 add_filters_if_not_exist(task["categories"], task["platform"])
                 insert_one(task)
                 push_notifications(task)
-                print(task)
