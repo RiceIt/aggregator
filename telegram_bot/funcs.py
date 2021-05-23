@@ -213,6 +213,7 @@ def remove_habr(chat_id):
     except ValueError:
         send_message(chat_id, text="Вы не подписаны на эту категорию")
 
+
 def to_platforms(chat_id):
     u = Users.query.filter_by(chat_id=chat_id).first()
     adding_filters = u.adding_filters
