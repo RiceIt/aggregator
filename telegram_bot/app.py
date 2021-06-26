@@ -15,7 +15,7 @@ db.init_app(app)
 migrate.init_app(app, db)
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route(Configuration.AGGREGATOR_URI, methods=["GET", "POST"])
 def receive_update():
     if request.method == "POST":
         print(request.json)
