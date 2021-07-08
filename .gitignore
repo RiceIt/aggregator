@@ -5,3 +5,4 @@ certs/
 tests.py
 test.db
 *.log
+dev.py

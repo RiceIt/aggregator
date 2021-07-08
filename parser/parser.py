@@ -5,13 +5,13 @@ import datetime
 
 from bs4 import BeautifulSoup
 
-from parser.funcs import is_id_exists, add_filters_if_not_exist, insert_one, push_notifications
+from parser.funcs import is_id_exists, insert_one, push_notifications
 
 
-class AbstractTaskBuilder(metaclass=abc.ABCMeta):
+class AbstractBuilder(metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
-    def get_task_list(cls, soup: BeautifulSoup) -> tuple:
+    def get_tasks_list(cls, soup: BeautifulSoup) -> tuple:
         pass
 
     @abc.abstractmethod
@@ -61,9 +61,14 @@ class AbstractTaskBuilder(metaclass=abc.ABCMeta):
         return fields
 
 
-class FlTaskBuilder(AbstractTaskBuilder):
+class FlBuilder(AbstractBuilder):
+    PLATFORM = "fl.ru"
+    URL = "https://www.fl.ru/projects/?kind=1"
+
     @classmethod
-    def get_task_list(cls, soup: BeautifulSoup) -> tuple:
+    def get_task_list(cls) -> tuple:
+        html = requests.get(cls.URL).content
+        soup = BeautifulSoup(html, 'lxml')
         task_list = soup.find('div', id='projects-list').find_all(class_='b-post')
         return tuple(filter(lambda t: 'topprjpay' not in t.attrs['class'], task_list))
 
@@ -139,10 +144,17 @@ class FlTaskBuilder(AbstractTaskBuilder):
         self.categories = self.parse_task(self._id, self.url)
 
 
-class FreelanceTaskBuilder(AbstractTaskBuilder):
+class FreelanceBuilder(AbstractBuilder):
+    PLATFORM = "freelance.ru"
+    URLS = ["https://freelance.ru/project/search", "https://freelance.ru/project/search?page=2&per-page=25"]
+
     @classmethod
-    def get_task_list(cls, soup: BeautifulSoup) -> tuple:
-        task_list = soup.find('div', id='w1').find_all(class_='box-shadow')
+    def get_task_list(cls) -> tuple:
+        task_list = []
+        for url in cls.URLS:
+            html = requests.get(url).content
+            soup = BeautifulSoup(html, 'lxml')
+            task_list.extend(soup.find('div', id='w1').find_all(class_='box-shadow'))
         return tuple(filter(lambda t: 'highlight' not in t.attrs['class'], task_list))
 
     def __init__(self, soup: BeautifulSoup):
@@ -180,10 +192,30 @@ class FreelanceTaskBuilder(AbstractTaskBuilder):
         self.categories = (category,)
 
 
-class HabrTaskBuilder(AbstractTaskBuilder):
+class HabrBuilder(AbstractBuilder):
+    PLATFORM = "habr.com"
+
     @classmethod
-    def get_task_list(cls, soup: BeautifulSoup) -> tuple:
-        return tuple(soup.find('ul', id='tasks_list').find_all('li', class_='content-list__item'))
+    def get_task_list(cls) -> tuple:
+        urls = {
+            "development": "https://freelance.habr.com/tasks?categories=development_all_inclusive,development_backend,development_frontend,development_prototyping,development_ios,development_android,development_desktop,development_bots,development_games,development_1c_dev,development_scripts,development_voice_interfaces,development_other",
+            "testing": "https://freelance.habr.com/tasks?categories=testing_sites,testing_mobile,testing_software",
+            "admin": "https://freelance.habr.com/tasks?categories=admin_servers,admin_network,admin_databases,admin_security,admin_other",
+            "design": "https://freelance.habr.com/tasks?categories=design_sites,design_landings,design_logos,design_illustrations,design_mobile,design_icons,design_polygraphy,design_banners,design_graphics,design_corporate_identity,design_presentations,design_modeling,design_animation,design_photo,design_other",
+            "content": "https://freelance.habr.com/tasks?categories=content_copywriting,content_rewriting,content_audio,content_article,content_scenarios,content_naming,content_correction,content_translations,content_coursework,content_specification,content_management,content_other",
+            "marketing": "https://freelance.habr.com/tasks?categories=marketing_smm,marketing_seo,marketing_context,marketing_email,marketing_research,marketing_sales,marketing_pr,marketing_other",
+            "other": "https://freelance.habr.com/tasks?categories=other_audit_analytics,other_consulting,other_jurisprudence,other_accounting,other_audio,other_video,other_engineering,other_other",
+        }
+        tasks_soup_list = []
+        for category, url in urls.items():
+            r = requests.get(url).text
+            soup = BeautifulSoup(r, "lxml")
+            category_tasks_soup_list = soup.find('ul', id='tasks_list').find_all('li', class_='content-list__item')
+            for tasks_soup in category_tasks_soup_list:
+                new_tag = soup.new_tag("div", attrs={"id": "category", "category_id": category})
+                tasks_soup.append(new_tag)
+                tasks_soup_list.append(tasks_soup)
+        return tuple(tasks_soup_list)
 
     @staticmethod
     def get_date(string):
@@ -236,42 +268,3 @@ class HabrTaskBuilder(AbstractTaskBuilder):
 
     def add_categories(self):
         self.categories = ("freelance.habr.com",)
-
-
-def create_task(builder: AbstractTaskBuilder):
-    builder.add_id()
-    builder.add_platform()
-    exists = builder.exists()
-    if exists:
-        return None
-    builder.add_title()
-    builder.add_url()
-    builder.add_description()
-    builder.add_created_at()
-    builder.add_price()
-    builder.add_categories()
-    return builder.task
-
-
-def get_task_list(url: str, task_builder: AbstractTaskBuilder):
-    html = requests.get(url).content
-    soup = BeautifulSoup(html, 'lxml')
-    return task_builder.get_task_list(soup)
-
-
-def main():
-    platforms = (
-        ('https://www.fl.ru/projects/?kind=1', FlTaskBuilder),
-        ('https://freelance.ru/project/search', FreelanceTaskBuilder),
-        ('https://freelance.ru/project/search?page=2&per-page=25', FreelanceTaskBuilder),
-        ('https://freelance.habr.com/tasks', HabrTaskBuilder),
-    )
-
-    for url, builder in platforms:
-        task_list = get_task_list(url, builder)
-        for task_soup in task_list:
-            task = create_task(builder(task_soup))
-            if task:
-                add_filters_if_not_exist(task["categories"], task["platform"])
-                insert_one(task)
-                push_notifications(task)

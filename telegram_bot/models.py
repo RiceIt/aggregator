@@ -2,6 +2,14 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from config import Configuration
+
+engine = create_engine(Configuration.SQLALCHEMY_DATABASE_URI)
+Session = sessionmaker(engine, future=True)
+
 
 db = SQLAlchemy()
 migrate = Migrate()
