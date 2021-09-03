@@ -1,5 +1,7 @@
-from telegram_bot.app import app
+from parser.funcs import main
+from loguru import logger
 
 
 if __name__ == '__main__':
-    app.run()
+    with logger.catch(reraise=True):
+        main()

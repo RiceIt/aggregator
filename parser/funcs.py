@@ -1,97 +1,62 @@
-import pymongo
-import psycopg2
-import slugify
+import datetime
 
-from parser.parser import AbstractBuilder, FlBuilder, FreelanceBuilder, HabrBuilder
-from telegram_bot.config import Configuration
-from telegram_bot.funcs import send_message
-from telegram_bot.logger import logger
+from loguru import logger
 
 
-mongo = pymongo.MongoClient(Configuration.MONGODB_URI)
-db = mongo["tasks"]
+from db.models import add_task, add_category_if_not_exists, get_users
+from parser.parsers import AbstractBuilder, FlBuilder, FreelanceBuilder, HabrBuilder, WeblancerBuilder, FreelancehuntBuilder
+from bot.funcs import send_message
 
 
-def is_id_exists(platform, _id):
-    collection = db[platform]
-    document = collection.find_one({"_id": _id})
-    if document:
-        return True
-    return False
+def get_time_code():
+    now = datetime.datetime.now().time()
+    time_code = now.hour * 2 + now.minute // 30
+    return time_code
 
 
-def insert_one(task):
-    collection = db[task["platform"]]
-    collection.insert_one(task)
-
-
-def _add_filter(conn, cur, name, slug, platform):
-    cur.execute(f"INSERT INTO filters (name, slug, platform) VALUES (%s, %s, %s)", (name, slug, platform))
-    conn.commit()
-    logger.info(f'Добавлена новая категория: "{platform}: {name}"')
-
-
-# def add_categories_if_not_exist(filters, platform):
-    # conn = psycopg2.connect(f"dbname={Configuration.POSTGRESQL_DBNAME} "
-    #                         f"user={Configuration.POSTGRESQL_USER} "
-    #                         f"password={Configuration.POSTGRESQL_PASSWORD}")
-    #
-    # cur = conn.cursor()
-    # for filter_name in filters:
-    #     filter_slug = slugify.slugify(filter_name)
-    #     try:
-    #         _add_filter(conn, cur, filter_name, filter_slug, platform)
-    #
-    #     except psycopg2.errors.UniqueViolation:
-    #         cur.execute("ROLLBACK")
-    #         conn.commit()
-    # cur.close()
-    # conn.close()
-
-
-def push_notifications(task):
+def push_notifications(task, time_code):
     message = f"📌 <b>{task['title']}</b>\n\n📝 {task['description']}\n\n💰 {task['price']}\n\n" \
               f"📚 {' '.join(task['categories'])}\n\n🔗 {task['url']}"
-    conn = psycopg2.connect(f"dbname={Configuration.POSTGRESQL_DBNAME} "
-                            f"user={Configuration.POSTGRESQL_USER} "
-                            f"password={Configuration.POSTGRESQL_PASSWORD}")
-
-    categories_placeholders = ', '.join(['%s'] * len(task['categories']))
-    sql = f"SELECT users.chat_id, users.silent_mode FROM filters INNER JOIN user_filters ON (filters.name IN ({categories_placeholders}) AND filters.platform = (%s) AND user_filters.filter_id = filters.id) INNER JOIN users ON (users.id = user_filters.user_id AND users.is_active = True) GROUP BY users.chat_id, users.silent_mode"
-
-    cur = conn.cursor()
-    cur.execute(sql, (*task['categories'], task['platform']))
-    users = cur.fetchall()
+    users = get_users(task['categories'], task['platform'], time_code)
     for user in users:
-        chat_id, silent_mode = user
-        send_message(chat_id, text=message, parse_mode='html', disable_notification=silent_mode)
+        chat_id, mode = user
+        if mode == 0:
+            send_message("sendMessage", chat_id, text=message, parse_mode='html', disable_notification=True)
+        elif mode == 1:
+            send_message("sendMessage", chat_id, text=message, parse_mode='html')
 
 
 def create_task_if_not_exists(builder: AbstractBuilder):
-    builder.add_id()
+    builder.add_slug()
     builder.add_platform()
     exists = builder.exists()
     if exists:
-        return None
+        return False, None
     builder.add_title()
     builder.add_url()
     builder.add_description()
     builder.add_created_at()
     builder.add_price()
     builder.add_categories()
-    return builder.task
+    return True, builder.task
 
 
 def main():
+    time_code = get_time_code()
     platforms = (
-        FlBuilder, FreelanceBuilder, HabrBuilder,
+        FlBuilder,
+        FreelanceBuilder,
+        HabrBuilder,
+        WeblancerBuilder,
+        FreelancehuntBuilder,
     )
 
     for platform in platforms:
-        tasks_soup_list = platform.get_task_list()
+        tasks_soup_list = platform.get_tasks_list()
         for task_soup in tasks_soup_list:
             created, task = create_task_if_not_exists(platform(task_soup))
             if created:
-                insert_one(task)
-                push_notifications(task)
-
+                add_task(task["slug"], task["platform"], task["url"])
+                for category in task["categories"]:
+                    add_category_if_not_exists(category, task["platform"])
+                push_notifications(task, time_code)
